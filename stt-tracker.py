@@ -1,6 +1,7 @@
 import requests
 from flask import Flask, request
 from bs4 import BeautifulSoup
+import json
 
 app = Flask(__name__)
 
@@ -35,7 +36,7 @@ def processRequest(callback) :
 
     if (loginRes.ok) :
         response = session.get(PLAYERFILE_URL + '&access_token=' + loginRes.json()['access_token'])
-        return callback(response.json()) if response.ok else responseToJson(response)
+        return json.dumps(callback(response.json())) if response.ok else responseToJson(response)
         
     return responseToJson(loginRes)
 
