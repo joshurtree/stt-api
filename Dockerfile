@@ -1,5 +1,7 @@
 FROM python:latest
+ENV STT_API=20
 COPY requirements.txt requirements.txt
+RUN apt install firefox
 RUN pip install -r requirements.txt
 RUN mkdir /app
 WORKDIR /app
