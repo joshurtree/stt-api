@@ -1,7 +1,8 @@
-FROM python:latest
-ENV STT_API=20
+ARG STT_API_VERSION
+FROM debian:bookworm
+RUN apt install python pip firefox -y
+ENV STT_API_SETTINGS=dict(TOKENS_DIR="/run/secrets/stt-api", STT_API_VERSION=$STT_API_VERSION)
 COPY requirements.txt requirements.txt
-RUN apt install firefox
 RUN pip install -r requirements.txt
 RUN mkdir /app
 WORKDIR /app
