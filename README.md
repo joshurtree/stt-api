@@ -6,9 +6,8 @@ This is a Docker container that provides provides api endpoints to the latest ve
 * [Docker](https://docker.com) or [Podman](https://podman.io)
 * [Curl](https://curl.se) (aready installed on all Linux, Mac and Windows 10 or later)
 
-## Installation
-Make a directory where your access tokens will be stored. This documentation assumes you have used the directory "stt-tokens".
-For your main account run the command
+## Retriveing an access for you account  
+Run the command
 ```
 curl -X POST \
     -d 'username=<email>' -d 'password=<password>' -d 'grant_type=password'  \
@@ -19,20 +18,21 @@ For any addional accounts replace "default" with a custom name. This produces th
 ```
 {"access_token":"<access_token>","expires_in":864000000,"refresh_token":"<refresh_token>","token_type":"Bearer"}
 ```
-Copy <access_token> and save in a file. 
+Copy <access_token> for future use. 
 
-## Standalone
+## Installation
+### Using Docker
 To run the container as a standalone container run
 ```
 docker build https://github.com/joshurtree/stt-api.git -t stt-api
 ```
 Then
 ```
-docker run -e STT_API=<client_api> -p 80:8080 -d stt-api
+docker run -e STT_API_VERSION=<client_api> -p 80:8080 -d stt-api
 ```
 Where "<client_api>" is passed to "https://app.startrektimelines.com?client_api=<client_api>".
 
-## In docker compose
+### Using Docker Compose
 To use the image within docker compose add 
 
 services:
@@ -41,7 +41,7 @@ services:
         ports:
             - 80:8080
         environment:
-            STT_API: <client_api>
+            STT_API_VERSION: <client_api>
 ```
 
 ## Usage
