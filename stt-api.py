@@ -5,6 +5,7 @@ import json
 import subprocess
 import os
 import traceback
+from dataclasses import asdict, dataclass 
 
 app = Flask('stt-api')
 prods = dict()
@@ -17,6 +18,26 @@ PLAYERFILE_URL = f"https://app.startrektimelines.com/player?only_read_state=true
 PROD_URL = "https://app.startrektimelines.com/"
 LOGIN_PAGE = 'https://app.startrektimelines.com/users/auth'
 LOGIN_URL = 'https://thorium.disruptorbeam.com/oauth2/token'
+
+@dataclass
+class NumModifier :
+    short: str
+    long: str
+
+
+def prettyNumber(value, modType = "long") :
+    modifiers = [
+        NumModifier("", ""),
+        NumModifier("K", " Thousand"),
+        NumModifier("M", " Million"),
+        NumModifier("B", " Billion"),
+        NumModifier("T", " Trillion")
+    ]
+
+    numSize = min((len(f"{value}")-1)//3, len(modifiers)-1)
+    val = f"{value/(10**(numSize*3)):.3g}"
+    mod = asdict(modifiers[numSize])[modType]
+    return val + mod
 
 def responseToJson(response) :
     return {
@@ -70,11 +91,32 @@ def voyage() :
 def shuttles() :
     return processRequest(lambda pf : pf['player']['character']['shuttle_adventures'])
 
-@app.get("/quantum")
-def quantum() :
-    return processRequest(lambda pf : pf['crew_crafting_root']['energy'])
+@app.get("/currencies")
+def currencies() :
+    def getCurrencies(pf) :
+        p = pf['player']
+        pc = p['character']
+        return {
+            "chronitons": pc['replay_energy_max'] + pc['replay_energy_overflow'],
+            "credits": p['money'],
+            "dilithium": p['premium_purchasable'],
+            "honor": p['honor'],
+            "quantum": pf['crew_crafting_root']['energy']['quantity'],
+        }
+    
+    return processRequest(getCurrencies)
 
-@app.get("/prod")
-def prod() :
-    processRequest(lambda pf : subprocess.Popen('/usr/bin/firefox -headless ' + PROD_URL + '?access_token=' + fetchAccessToken()))
-    return { "message": "Prodded"}, 200
+@app.get("/tickets")
+def tickets() :
+    def getTickets(pf) :
+        p = pf['player']
+        pc = p['character']
+
+        return {
+            "cadets": pc['cadet_tickets']['current'],
+            "ship_battles": pc['pvp_tickets']['current'],
+            "replicator": p['replicator_limit'] - p['replicator_uses_today'],
+            "boss_battles": pf['fleet_boss_battles_root']['fleet_boss_battles_energy']['quantity']
+        }
+    
+    return processRequest(getTickets)

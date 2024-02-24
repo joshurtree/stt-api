@@ -1,13 +1,10 @@
 ARG STT_API_VERSION
-FROM debian:bookworm
+FROM python:3.12-rc-bookworm
 RUN apt update
-RUN apt install python3-pip firefox-esr -y
-RUN apt install -y python3.11-venv
+RUN apt install firefox-esr -y
 RUN mkdir /app
 WORKDIR /app
 COPY requirements.txt requirements.txt
-RUN python3 -m venv .venv
-ENV PATH=".venv/bin:$PATH"
-RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt --no-cache-dir
 COPY . . 
-CMD  uwsgi --http 0.0.0.0:80 --master -file stt-api:app
+CMD  uwsgi --http 0.0.0.0:80 --master -w stt-api:app
