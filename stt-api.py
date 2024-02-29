@@ -20,6 +20,10 @@ VOYAGE_URL = BASE_URL + 'voyage/refresh'
 LOGIN_PAGE = BASE_URL + 'users/auth'
 #LOGIN_URL = 'https://thorium.disruptorbeam.com/oauth2/token'
 
+class Struct:
+    def __init__(self, **entries):
+        self.__dict__.update(entries)
+        
 @dataclass
 class NumModifier :
     short: str
@@ -115,7 +119,13 @@ def voyage() :
                 raise ClientException('No voyage running')
         payload['voyage_status_id'] = voyage_ids[user_key]
         return  requests.post(VOYAGE_URL, payload)
-    return processCustomRequest(request, lambda pf : pf[0]['character']['voyage'][0])
+    
+    def callback(pf) :
+        voyage = pf[0]['character']['voyage'][0]
+        voyage.pop("id", None)
+        return voyage
+    
+    return processCustomRequest(request, callback)
 
 @app.get("/shuttles") 
 def shuttles() :
