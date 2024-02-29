@@ -8,16 +8,17 @@ import traceback
 from dataclasses import asdict, dataclass 
 
 app = Flask('stt-api')
-prods = dict()
+voyage_ids = dict()
 
 class ClientException(Exception) :
     def __init__(self, message) :
         self.message = message
 
-PLAYERFILE_URL = f"https://app.startrektimelines.com/player?only_read_state=true&client_api={os.environ['STT_API_VERSION']}"
-PROD_URL = "https://app.startrektimelines.com/"
-LOGIN_PAGE = 'https://app.startrektimelines.com/users/auth'
-LOGIN_URL = 'https://thorium.disruptorbeam.com/oauth2/token'
+BASE_URL = 'https://app.startrektimelines.com/'
+PLAYERFILE_URL = BASE_URL + 'player'
+VOYAGE_URL = BASE_URL + 'voyage/refresh'
+LOGIN_PAGE = BASE_URL + 'users/auth'
+#LOGIN_URL = 'https://thorium.disruptorbeam.com/oauth2/token'
 
 @dataclass
 class NumModifier :
@@ -40,19 +41,42 @@ def prettyNumber(value, modType = "long") :
     return val + mod
 
 def responseToJson(response) :
-    return {
+    return jsonify({
         "status_code": response.status_code, 
         "message": response.text  
+    })
+
+def fetchDefaultParams() :
+    if not 'access_token' in request.args :
+        raise ClientException("Access token is required.")
+    
+    if not 'STT_API_VERSION' in os.environ and not 'stt_api_version' in request.args :
+        raise ClientException('Parameter stt_api_version is required')
+    client_api = request.args['stt_api_version']  if 'stt_api_version' in request.args else os.environ['STT_API_VERSION']
+ 
+    return {
+        'access_token': request.args['access_token'],
+        'client_api': client_api
     }
 
-def fetchAccessToken() :
-    if 'access_token' in request.args :
-        return request.args['access_token']
-    raise Exception("Access token is required.")
-
 def processRequest(callback) :
+    def request() :
+        params = fetchDefaultParams()
+        params['only_read_state'] = True
+        return requests.get(PLAYERFILE_URL, params)
+    
+    def storeVoyageIdAndDoCallback(pf) :
+        params = fetchDefaultParams()
+        voyage = pf['player']['character']['voyage']
+        if len(voyage) > 0 :
+            voyage_ids[params['access_token'][:-10]] = voyage[0]['id']
+        return callback(pf)
+    
+    return processCustomRequest(request, storeVoyageIdAndDoCallback)
+
+def processCustomRequest(request, callback) :
     try :
-        response = requests.get(PLAYERFILE_URL + '&access_token=' + fetchAccessToken())
+        response = request() 
         return jsonify(callback(response.json())) if response.ok else responseToJson(response)
     except ClientException as e:
         return {"Error": e.message}, 400
@@ -82,10 +106,16 @@ def catch_all(path) :
 
 @app.get("/voyage")
 def voyage() :
-    try :
-        return processRequest(lambda pf : pf['player']['character']['voyage'][0])
-    except :
-        return { "error": "No voyage running" }, 400 
+    def request() :
+        payload = fetchDefaultParams()
+        user_key = payload['access_token'][:-10]
+        if user_key not in voyage_ids :
+            processRequest(lambda pf : pf)
+            if user_key not in voyage_ids :
+                raise ClientException('No voyage running')
+        payload['voyage_status_id'] = voyage_ids[user_key]
+        return  requests.post(VOYAGE_URL, payload)
+    return processCustomRequest(request, lambda pf : pf[0]['character']['voyage'][0])
 
 @app.get("/shuttles") 
 def shuttles() :
@@ -120,3 +150,8 @@ def tickets() :
         }
     
     return processRequest(getTickets)
+
+@app.get("/containers")
+def containers() :
+    request = lambda : requests.get(BASE_URL + 'continuum/containers', fetchDefaultParams())
+    return processCustomRequest(request, lambda res : res['character']['continuum_containers'])

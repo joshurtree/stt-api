@@ -64,5 +64,11 @@ Shortcut to `player.character.voyage[0]`
 ### /shuttles
 Shortcut to `player.character.shuttle_adventures`
 
-### /quantum
-Shortcut to `crew_crafting_root.energy`
+### /currencies
+Returns quantities of each of chronitons, credits, honor, quantum and dilithium.
+
+### /tickets
+Returns the number of tickets you have for cadet missions, ship battles, replications and boss battles.
+
+### /containers
+Returns the current state of the continuum containers.
