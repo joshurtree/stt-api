@@ -21,10 +21,6 @@ VOYAGE_URL = BASE_URL + 'voyage/refresh'
 LOGIN_PAGE = BASE_URL + 'users/auth'
 #LOGIN_URL = 'https://thorium.disruptorbeam.com/oauth2/token'
 
-class Struct:
-    def __init__(self, **entries):
-        self.__dict__.update(entries)
-        
 @dataclass
 class NumModifier :
     short: str
@@ -67,7 +63,7 @@ def fetchDefaultParams() :
 def processRequest(callback) :
     def request() :
         params = fetchDefaultParams()
-        params['only_read_state'] = True
+        params['only_read_state'] = 'true'
         return requests.get(PLAYERFILE_URL, params)
     
     def storeVoyageIdAndDoCallback(pf) :
@@ -169,7 +165,7 @@ def containers() :
         for i in range(len(containers['auto_fill_starts'])) :
             fill_duration = datetime.now(timezone.utc) - datetime.fromisoformat(containers['auto_fill_starts'][i])
             output.append({
-                "time_util_full": CONTAINER_FILL_SECONDS - fill_duration.seconds - containers['manual_fill_counts'][i]*FILL_RATE, 
+                "time_until_full": CONTAINER_FILL_SECONDS - fill_duration.seconds - containers['manual_fill_counts'][i]*FILL_RATE, 
                 "fill_count": max([fill_duration.seconds//FILL_RATE + containers['manual_fill_counts'][i], 0]),
                 "fill_state":fill_states[(fill_duration.seconds//CONTAINER_FILL_SECONDS) + 1]
             })
