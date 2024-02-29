@@ -6,6 +6,7 @@ import subprocess
 import os
 import traceback
 from dataclasses import asdict, dataclass 
+from datetime import datetime, timedelta, timezone
 
 app = Flask('stt-api')
 voyage_ids = dict()
@@ -120,12 +121,7 @@ def voyage() :
         payload['voyage_status_id'] = voyage_ids[user_key]
         return  requests.post(VOYAGE_URL, payload)
     
-    def callback(pf) :
-        voyage = pf[0]['character']['voyage'][0]
-        voyage.pop("id", None)
-        return voyage
-    
-    return processCustomRequest(request, callback)
+    return processCustomRequest(request, lambda pf : pf[0]['character']['voyage'][0])
 
 @app.get("/shuttles") 
 def shuttles() :
@@ -161,7 +157,23 @@ def tickets() :
     
     return processRequest(getTickets)
 
+CONTAINER_FILL_SECONDS = timedelta(hours=10).seconds
+FILL_RATE = CONTAINER_FILL_SECONDS/100
 @app.get("/containers")
 def containers() :
+    fill_states = [ "Cooldown", "Filling", "Full"]
     request = lambda : requests.get(BASE_URL + 'continuum/containers', fetchDefaultParams())
-    return processCustomRequest(request, lambda res : res['character']['continuum_containers'])
+    def processResult(res) :
+        containers = res['character']['continuum_containers']
+        output = []
+        for i in range(len(containers['auto_fill_starts'])) :
+            fill_duration = datetime.now(timezone.utc) - datetime.fromisoformat(containers['auto_fill_starts'][i])
+            output.append({
+                "time_util_full": CONTAINER_FILL_SECONDS - fill_duration.seconds - containers['manual_fill_counts'][i]*FILL_RATE, 
+                "fill_count": max([fill_duration.seconds//FILL_RATE + containers['manual_fill_counts'][i], 0]),
+                "fill_state":fill_states[(fill_duration.seconds//CONTAINER_FILL_SECONDS) + 1]
+            })
+
+        return output 
+
+    return processCustomRequest(request, processResult)
