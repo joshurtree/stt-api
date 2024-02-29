@@ -77,7 +77,7 @@ def processRequest(callback) :
 def processCustomRequest(request, callback) :
     try :
         response = request() 
-        return jsonify(callback(response.json())) if response.ok else responseToJson(response)
+        return callback(response.json()) if response.ok else responseToJson(response)
     except ClientException as e:
         return {"Error": e.message}, 400
     except Exception as e:
