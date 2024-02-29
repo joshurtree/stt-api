@@ -36,6 +36,9 @@ def prettyNumber(value, modType = "long") :
         NumModifier("T", " Trillion")
     ]
 
+    if modType == 'none' :
+        return f"{value}"
+
     numSize = min((len(f"{value}")-1)//3, len(modifiers)-1)
     val = f"{value/(10**(numSize*3)):.3g}"
     mod = asdict(modifiers[numSize])[modType]
@@ -128,12 +131,14 @@ def currencies() :
     def getCurrencies(pf) :
         p = pf['player']
         pc = p['character']
+        format = request.args['format'] if 'format' in request.args else 'none'
+        strVal = lambda val : prettyNumber(val, format)
         return {
-            "chronitons": pc['replay_energy_max'] + pc['replay_energy_overflow'],
-            "credits": p['money'],
-            "dilithium": p['premium_purchasable'],
-            "honor": p['honor'],
-            "quantum": pf['crew_crafting_root']['energy']['quantity'],
+            "chronitons": strVal(pc['replay_energy_max'] + pc['replay_energy_overflow']),
+            "credits": strVal( p['money']),
+            "dilithium": strVal(p['premium_purchasable']),
+            "honor": strVal(p['honor']),
+            "quantum": strVal(pf['crew_crafting_root']['energy']['quantity']),
         }
     
     return processRequest(getCurrencies)
@@ -143,7 +148,7 @@ def tickets() :
     def getTickets(pf) :
         p = pf['player']
         pc = p['character']
-
+        
         return {
             "cadets": pc['cadet_tickets']['current'],
             "ship_battles": pc['pvp_tickets']['current'],
