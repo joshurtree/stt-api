@@ -167,7 +167,7 @@ def containers() :
             output.append({
                 "time_until_full": CONTAINER_FILL_SECONDS - fill_duration.seconds - containers['manual_fill_counts'][i]*FILL_RATE, 
                 "fill_count": max([fill_duration.seconds//FILL_RATE + containers['manual_fill_counts'][i], 0]),
-                "fill_state":fill_states[(fill_duration.seconds//CONTAINER_FILL_SECONDS) + 1]
+                "state":fill_states[(fill_duration.seconds//CONTAINER_FILL_SECONDS) + 1]
             })
 
         return output 
