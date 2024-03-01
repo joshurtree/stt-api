@@ -168,11 +168,13 @@ def containers() :
         containers = res['character']['continuum_containers']
         output = []
         for i in range(len(containers['auto_fill_starts'])) :
-            fill_duration = datetime.now(timezone.utc) - datetime.fromisoformat(containers['auto_fill_starts'][i])
+            fill_duration = (datetime.now(timezone.utc) - datetime.fromisoformat(containers['auto_fill_starts'][i])).total_seconds()
+            print(fill_duration//CONTAINER_FILL_SECONDS)
+            print(fill_duration)
             output.append({
-                "time_until_full": CONTAINER_FILL_SECONDS - fill_duration.seconds - containers['manual_fill_counts'][i]*FILL_RATE, 
-                "fill_count": max([fill_duration.seconds//FILL_RATE + containers['manual_fill_counts'][i], 0]),
-                "state":fill_states[(fill_duration.seconds//CONTAINER_FILL_SECONDS) + 1]
+                "time_until_full": CONTAINER_FILL_SECONDS - fill_duration - containers['manual_fill_counts'][i]*FILL_RATE, 
+                "fill_count": max([fill_duration//FILL_RATE + containers['manual_fill_counts'][i], 0]),
+                "state":fill_states[int(fill_duration//CONTAINER_FILL_SECONDS) + 1]
             })
 
         return output 
